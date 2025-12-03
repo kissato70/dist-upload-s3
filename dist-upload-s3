@@ -71,7 +71,6 @@ LOG_LEVEL_DEFAULT="ERR"                   # Log level : ERR | LOG | DEBUG
 LOG_HEADER_SET=false                      # Helper value for setting the log header during the first log item write.
 CONFIG_FILE_DIR="."                       # Place the config file in this folder.
 DIST_DIR_DEFAULT="dist"                   # Default value for the folder name to send to S3.
-#DEFAULT_BACKUP_BUCKET="off"              # Backup is switched off as default.
 DEFAULT_BRANCH_FOLDER="Main"              # Branch name folder name in the backup bucket ("Branch/{versionName}")
 DEFAULT_VERSION_LIMIT=0
 LIST_MODE=false
@@ -83,7 +82,7 @@ echoS () {
   if [ ! "$SILENT_MODE" = true ] && [ ! "$LIST_MODE" = true  ]; then
     echo "$1"
   fi
-  if [ -n "$LOG_FILE" ] && [ "$LOG_LEVEL" == "LOG" ] || [ "$LOG_LEVEL" == "DEBUG" ]; then
+  if [ -n "$LOG_FILE" ] && { [ "$LOG_LEVEL" == "LOG" ] || [ "$LOG_LEVEL" == "DEBUG" ]; }; then
     log "$1"
   fi
 }
@@ -91,17 +90,17 @@ echoS () {
 # Log file handler function
 log() {
   if [ ! "$LOG_HEADER_SET" = true  ]; then
-    echo "---------------------------------------------------------------------"    >  $BASE_DIR/$LOG_FILE
-    echo "|                      S3 upload-dist $VERSION                        |"  >> $BASE_DIR/$LOG_FILE
-    echo "|                              LOG FILE                             |"    >> $BASE_DIR/$LOG_FILE
-    echo "---------------------------------------------------------------------"    >> $BASE_DIR/$LOG_FILE
-    echo "Log date: "`date '+%Y-%m-%d_%H:%M:%S'` >> $BASE_DIR/$LOG_FILE
-    echo "Log level: $LOG_LEVEL" >> $BASE_DIR/$LOG_FILE
-    echo "" >> $BASE_DIR/$LOG_FILE
+    echo "---------------------------------------------------------------------"    >  "$BASE_DIR/$LOG_FILE"
+    echo "|                      S3 upload-dist $VERSION                        |"  >> "$BASE_DIR/$LOG_FILE"
+    echo "|                              LOG FILE                             |"    >> "$BASE_DIR/$LOG_FILE"
+    echo "---------------------------------------------------------------------"    >> "$BASE_DIR/$LOG_FILE"
+    echo "Log date: "`date '+%Y-%m-%d_%H:%M:%S'` >> "$BASE_DIR/$LOG_FILE"
+    echo "Log level: $LOG_LEVEL" >> "$BASE_DIR/$LOG_FILE"
+    echo "" >> "$BASE_DIR/$LOG_FILE"
     LOG_HEADER_SET=true
   fi
-  if [ -n "$2" ] && [ "$LOG_LEVEL" == $2 ] || [ "$LOG_LEVEL" == "DEBUG"  ]; then
-    echo "$1" >> $BASE_DIR/$LOG_FILE
+  if [ -n "$2" ] && { [ "$LOG_LEVEL" == "$2" ] || [ "$LOG_LEVEL" == "DEBUG" ]; }; then
+    echo "$1" >> "$BASE_DIR/$LOG_FILE"
   fi
 }
 
@@ -381,12 +380,6 @@ fi
 if [ -z "$S3_BUCKET" ]; then
   S3_BUCKET=$DEFAULT_BUCKET
 fi
-# Checking the given bucket name format
-# if [[ "$S3_BUCKET" =~ $BUCKET_NAME_PATTERN ]]; then
-#   echoS "  Using S3 bucket: $S3_BUCKET"
-# else
-#   echo "ERROR: Invalid bucket name!"; exit 1;
-# fi
 
 # If in write mode, then perform some tests
 if [ "$CONFIG_WRITE_MODE" = true ] ; then
@@ -411,7 +404,7 @@ if [ "$CONFIG_WRITE_MODE" = true ] ; then
 fi  # testing if in write mode
 
 # If backup bucket is set or given as a param, check and set it too
-if [ "$CONFIG_WRITE_MODE" != true ] && [ -z BACKUP_BUCKET ] ; then
+if [ "$CONFIG_WRITE_MODE" != true ] && [ -z "$BACKUP_BUCKET" ] ; then
   BACKUP_BUCKET=$DEFAULT_BACKUP_BUCKET
 fi
 if [ -z "$YES" ] || [ -z "$DEFAULT_BACKUP_BUCKET" ]; then
@@ -428,12 +421,6 @@ if [ -z "$BACKUP_BUCKET" ]; then
 fi
 # If not switched off  and its name differs from main bucket, check it (if in write mode)
 if [ -n "$BACKUP_BUCKET" ] && [ "$BACKUP_BUCKET" != "$S3_BUCKET" ]  && [ "$BACKUP_BUCKET" != "off"  ] && [ "$CONFIG_WRITE_MODE" = true ] ; then
-  # Checking the given bucket name format
-  # if [[ "$BACKUP_BUCKET" =~ $BUCKET_NAME_PATTERN ]]; then
-  #   echoS "  Using S3 bucket for backup: $BACKUP_BUCKET"
-  # else
-  #   echo "ERROR: Invalid backup bucket name ($BACKUP_BUCKET)!"; exit 1;
-  # fi
   # Checking whether the bucket exists on S3 and reachable with the given profile
   if aws s3 ls $BACKUP_BUCKET --profile $PROFILE  2>&1 | grep -q 'NoSuchBucket' ; then
     echo "ERROR: The given S3 backup bucket '$BACKUP_BUCKET' does not exists or not reachable with the credentials set in the profile '$PROFILE' !"; exit 1
@@ -518,16 +505,16 @@ if [ "$ROLLBACK" != true ]; then
     echo "VERSION_LIMIT=$VERSION_LIMIT" >> $CONFIG_FILE
     # Adding the config and log file to .gitignore
     if [ "$GITIGNORE" == "true" ]; then
-      if [ -f $BASE_DIR/.gitignore ]; then
-        if grep -q *.$CONFIG_FILE_TYPE $BASE_DIR/.gitignore 2>&1 ; then
+      if [ -f "$BASE_DIR/.gitignore" ]; then
+        if grep -q "*.$CONFIG_FILE_TYPE" "$BASE_DIR/.gitignore" 2>&1 ; then
           :
         else
-          echo "" >> $BASE_DIR/.gitignore
-          echo "# distribution upload config file" >> $BASE_DIR/.gitignore
-          echo "*.$CONFIG_FILE_TYPE"  >> $BASE_DIR/.gitignore
-          echo "# distribution upload log file" >> $BASE_DIR/.gitignore
-          echo "*.$LOG_FILE_TYPE"  >> $BASE_DIR/.gitignore
-          echo "" >> $BASE_DIR/.gitignore
+          echo "" >> "$BASE_DIR/.gitignore"
+          echo "# distribution upload config file" >> "$BASE_DIR/.gitignore"
+          echo "*.$CONFIG_FILE_TYPE"  >> "$BASE_DIR/.gitignore"
+          echo "# distribution upload log file" >> "$BASE_DIR/.gitignore"
+          echo "*.$LOG_FILE_TYPE"  >> "$BASE_DIR/.gitignore"
+          echo "" >> "$BASE_DIR/.gitignore"
           echo "The config and log file type is added to the .gitignore file."
         fi
       else
@@ -597,7 +584,7 @@ if [ "$BACKUP_BUCKET" != "off" ] ; then
 
     # If list mode is active, show the branch contents
     if [ "$LIST_MODE" = true ]; then
-      if [ -z $LIST_TAIL ]; then
+      if [ -z "$LIST_TAIL" ]; then
         LIST_TAIL=$DEFAULT_LIST_TAIL
       fi
       echo "Bucket '$BACKUP_BUCKET/$BRANCH_FOLDER':"
@@ -687,10 +674,10 @@ if [ "$BACKUP_BUCKET" != "off" ] ; then
       aws s3 rm s3://$BACKUP_BUCKET/$BRANCH_FOLDER/$VERS_DELETE --recursive  --profile $PROFILE 2>&1  > /dev/null
       echoS "  Recovering previous version: `echo $VERS_RECOVER | sed 's/.$//'`"
       if aws s3 rm s3://$S3_BUCKET/ --recursive --profile $PROFILE 2>&1 > /dev/null | grep -q "error"; then
-        $REC_ERROR="Recovery ERROR: Delete bucket content error.";
+        REC_ERROR="Recovery ERROR: Delete bucket content error.";
       fi
       if aws s3 cp s3://$BACKUP_BUCKET/$BRANCH_FOLDER/$VERS_RECOVER s3://$S3_BUCKET/  --recursive  --profile $PROFILE  2>&1 > /dev/null | grep -q "error"; then
-        $REC_ERROR="Recovery ERROR: Recovery sync error."
+        REC_ERROR="Recovery ERROR: Recovery sync error.";
       fi
       if [ -n "$REC_ERROR" ]; then
         echo ""

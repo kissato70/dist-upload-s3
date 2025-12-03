@@ -1,6 +1,6 @@
 {
   "name": "dist-upload-s3",
-  "version": "1.1.12",
+  "version": "1.1.13",
   "description": "Shell script for AWS S3 bucket upload from the distribution folder (linux version)",
   "bin": { "dist-upload-s3": "./dist-upload-s3" },
   "man": "./man/doc.1",
